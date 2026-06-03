@@ -2,6 +2,8 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 import { initXR } from './core/xr.js';
 import { initControllers, updateControllers } from './core/controllers.js';
 import { initTeleport, updateTeleport } from './core/teleport.js';
+import { initGrid } from './core/grid.js';
+
 
 let scene, camera, renderer;
 
@@ -22,6 +24,8 @@ function init() {
     document.body.appendChild(renderer.domElement);
 
     initXR(renderer);
+    initGrid(scene);
+
 
     // Licht
     const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
