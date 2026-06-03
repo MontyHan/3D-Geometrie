@@ -3,8 +3,6 @@ import { initXR } from './core/xr.js';
 import { initControllers, updateControllers } from './core/controllers.js';
 import { initTeleport, updateTeleport } from './core/teleport.js';
 import { initGrid } from './core/grid.js';
-import { initInteraction, updateInteraction } from './core/interaction.js';
-import { initPoints } from './core/points.js';
 
 
 let scene, camera, renderer;
@@ -34,9 +32,7 @@ function init() {
 
     initXR(renderer);
     initGrid(scene);
-    initPoints(scene);
-    initInteraction(renderer, rig, scene);
-
+    
 
     // Licht
     const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
