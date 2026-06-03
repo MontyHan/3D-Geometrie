@@ -1,50 +1,34 @@
-// === TELEPORT SYSTEM ===
-// Datei: src/core/teleport.js
-
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
 let controller;
-let raycaster;
-let tempMatrix;
 let teleportMarker;
 let floor;
 
+let curveLine;
+let points = [];
+let raycaster = new THREE.Raycaster();
+
 export function initTeleport(renderer, scene, camera) {
 
-    // === RAYCASTER (Laserstrahl) ===
-    raycaster = new THREE.Raycaster();
-    tempMatrix = new THREE.Matrix4();
-
-    // === CONTROLLER (linke Hand = 0) ===
     controller = renderer.xr.getController(0);
     scene.add(controller);
 
-    // === LASERSTRAHL VISUELL ===
-    const geometry = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(0, 0, -1)
-    ]);
-
+    // === PARABEL LINIE ===
     const material = new THREE.LineBasicMaterial({ color: 0x00ffcc });
+    const geometry = new THREE.BufferGeometry();
 
-    const line = new THREE.Line(geometry, material);
-    line.name = 'ray';
-    line.scale.z = 5;
-    controller.add(line);
+    curveLine = new THREE.Line(geometry, material);
+    scene.add(curveLine);
 
     // === BODEN ===
     const floorGeo = new THREE.PlaneGeometry(20, 20);
-    const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x222222,
-        roughness: 1
-    });
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
 
     floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
     scene.add(floor);
 
-    // === TELEPORT MARKER (wo du hinzielst) ===
+    // === MARKER ===
     const markerGeo = new THREE.CircleGeometry(0.25, 32);
     const markerMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
 
@@ -53,51 +37,69 @@ export function initTeleport(renderer, scene, camera) {
     teleportMarker.visible = false;
     scene.add(teleportMarker);
 
-    // === BUTTON EVENTS ===
-    controller.addEventListener('selectstart', onSelectStart);
-    controller.addEventListener('selectend', onSelectEnd);
-}
+    controller.addEventListener('selectstart', () => {
+        controller.userData.isSelecting = true;
+    });
 
-function onSelectStart() {
-    this.userData.isSelecting = true;
-}
+    controller.addEventListener('selectend', () => {
+        controller.userData.isSelecting = false;
 
-function onSelectEnd() {
-    this.userData.isSelecting = false;
+        if (teleportMarker.visible) {
+            const p = teleportMarker.position;
 
-    if (teleportMarker.visible) {
-        const offset = new THREE.Vector3();
-        offset.copy(teleportMarker.position);
-
-        // Kamera verschieben (Teleport)
-        this.parent.position.set(
-            -offset.x,
-            this.parent.position.y,
-            -offset.z
-        );
-    }
+            controller.parent.position.set(-p.x, controller.parent.position.y, -p.z);
+        }
+    });
 }
 
 export function updateTeleport() {
 
     if (!controller) return;
 
-    tempMatrix.identity().extractRotation(controller.matrixWorld);
+    points = [];
 
-    raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
-    raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+    const start = new THREE.Vector3();
+    start.setFromMatrixPosition(controller.matrixWorld);
 
-    const intersects = raycaster.intersectObject(floor);
+    const direction = new THREE.Vector3(0, 0, -1)
+        .applyQuaternion(controller.quaternion)
+        .normalize();
 
-    if (intersects.length > 0) {
-        const point = intersects[0].point;
+    let velocity = direction.multiplyScalar(6); // Stärke der Kurve
+    let position = start.clone();
 
-        teleportMarker.position.copy(point);
+    let hitPoint = null;
+
+    // === PARABEL BERECHNUNG ===
+    for (let i = 0; i < 30; i++) {
+
+        points.push(position.clone());
+
+        // Schwerkraft
+        velocity.y -= 0.15;
+
+        position = position.clone().add(velocity.clone().multiplyScalar(0.1));
+
+        // Raycast nach unten (prüfen ob Boden getroffen)
+        raycaster.set(position, new THREE.Vector3(0, -1, 0));
+        const hit = raycaster.intersectObject(floor);
+
+        if (hit.length > 0 && hit[0].distance < 0.2) {
+            hitPoint = hit[0].point;
+            points.push(hitPoint.clone());
+            break;
+        }
+    }
+
+    // === Linie updaten ===
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    curveLine.geometry.dispose();
+    curveLine.geometry = geometry;
+
+    // === Marker ===
+    if (hitPoint) {
+        teleportMarker.position.copy(hitPoint);
         teleportMarker.visible = true;
-
-        // Laser anpassen
-        const ray = controller.getObjectByName('ray');
-        ray.scale.z = intersects[0].distance;
     } else {
         teleportMarker.visible = false;
     }
