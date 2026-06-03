@@ -1,16 +1,20 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
-
 let controller;
 let curveLine;
 let marker;
 let floor;
 let raycaster = new THREE.Raycaster();
+let rig; // ✅ NEU
 
-export function initTeleport(renderer, scene, camera) {
+export function initTeleport(renderer, scene, playerRig) {
+
+    rig = playerRig; // ✅ speichern
 
     controller = renderer.xr.getController(0);
-    scene.add(controller);
+
+    // ✅ Controller an das Rig hängen (NICHT an scene!)
+    rig.add(controller);
 
     // Linie
     curveLine = new THREE.Line(
@@ -34,7 +38,9 @@ export function initTeleport(renderer, scene, camera) {
     controller.addEventListener('selectend', () => {
         if (marker.visible) {
             const p = marker.position;
-            controller.parent.position.set(-p.x, 0, -p.z);
+
+            // ✅ RICHTIGES Teleportieren (rig bewegen)
+            rig.position.set(p.x, 0, p.z);
         }
     });
 }
