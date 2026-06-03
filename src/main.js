@@ -23,16 +23,6 @@ scene.add(cube);
 /* Controller */
 const controller1 = renderer.xr.getController(0);
 scene.add(controller1);
-/* Einfaches Controller-Modell */
-const controllerGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.15);
-const controllerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-
-const controllerMesh = new THREE.Mesh(controllerGeometry, controllerMaterial);
-
-// leicht nach vorne verschieben
-controllerMesh.position.z = -0.1;
-
-controller1.add(controllerMesh);
 
 
 /* Laserstrahl */
