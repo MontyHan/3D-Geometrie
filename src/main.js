@@ -5,10 +5,8 @@ import { initTeleport, updateTeleport } from './core/teleport.js';
 import { initGrid } from './core/grid.js';
 import { initInputUI, handleUISelection } from './core/inputUI.js';
 
-
-
 let scene, camera, renderer;
-let rig; // ✅ NEU
+let rig;
 
 init();
 animate();
@@ -18,12 +16,17 @@ function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x202040);
 
-    // ✅ NEU: Rig (Spieler)
+    // ✅ Rig (Spieler)
     rig = new THREE.Group();
     scene.add(rig);
 
-    // ✅ Kamera ins Rig
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 100);
+    // ✅ Kamera INS Rig
+    camera = new THREE.PerspectiveCamera(
+        70,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        100
+    );
     rig.add(camera);
 
     renderer = new THREE.WebGLRenderer({ antialias:true });
@@ -34,9 +37,8 @@ function init() {
 
     initXR(renderer);
     initGrid(scene);
-    
 
-    // Licht
+    // ✅ Licht
     const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
     scene.add(light);
 
@@ -44,21 +46,30 @@ function init() {
     dirLight.position.set(3,6,4);
     scene.add(dirLight);
 
-    // Boden
+    // ✅ Boden
     const floor = new THREE.Mesh(
         new THREE.PlaneGeometry(40,40),
         new THREE.MeshStandardMaterial({ color:0x222222 })
     );
-    floor.rotation.x = -Math.PI/2;
+    floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
 
-    // Koordinatensystem
+    // ✅ Achsen
     const axes = new THREE.AxesHelper(5);
     scene.add(axes);
 
-    // ✅ Systeme angepasst
-    initControllers(renderer, rig);      // statt scene
-    initTeleport(renderer, scene, rig);  // statt camera
+    // ✅ Controller (JETZT mit Rückgabe!)
+    const controllers = initControllers(renderer, rig);
+
+    // ✅ UI an linken Controller hängen
+    initInputUI(scene, camera, rig, controllers.left);
+
+    controllers.left.addEventListener('selectstart', () => {
+        handleUISelection();
+    });
+
+    // ✅ Teleport nutzt Rig (wichtig!)
+    initTeleport(renderer, scene, rig);
 }
 
 function animate() {
@@ -66,8 +77,6 @@ function animate() {
 
         updateControllers();
         updateTeleport();
-        updateInteraction();
-
 
         renderer.render(scene, camera);
     });
