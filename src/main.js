@@ -4,8 +4,8 @@ import { initControllers, updateControllers } from './core/controllers.js';
 import { initTeleport, updateTeleport } from './core/teleport.js';
 import { initGrid } from './core/grid.js';
 
-
 let scene, camera, renderer;
+let rig; // ✅ NEU
 
 init();
 animate();
@@ -15,7 +15,13 @@ function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x202040);
 
+    // ✅ NEU: Rig (Spieler)
+    rig = new THREE.Group();
+    scene.add(rig);
+
+    // ✅ Kamera ins Rig
     camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 100);
+    rig.add(camera);
 
     renderer = new THREE.WebGLRenderer({ antialias:true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -25,7 +31,6 @@ function init() {
 
     initXR(renderer);
     initGrid(scene);
-
 
     // Licht
     const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
@@ -47,9 +52,9 @@ function init() {
     const axes = new THREE.AxesHelper(5);
     scene.add(axes);
 
-    // Systeme
-    initControllers(renderer, scene);
-    initTeleport(renderer, scene, camera);
+    // ✅ Systeme angepasst
+    initControllers(renderer, rig);      // statt scene
+    initTeleport(renderer, scene, rig);  // statt camera
 }
 
 function animate() {
