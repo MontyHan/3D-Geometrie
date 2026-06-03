@@ -1,144 +1,161 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
-let scene, camera, rig;
-let controller;
+let scene, camera, rig, controller;
 
-let raycaster = new THREE.Raycaster();
-let tempMatrix = new THREE.Matrix4();
+const raycaster = new THREE.Raycaster();
+const tempMatrix = new THREE.Matrix4();
 
-let buttons = [];
-let values = { x: 0, y: 0, z: 0 };
-let textMeshes = {};
+const buttons = [];
+const values = { x: 0, y: 0, z: 0 };
+const textSprites = {};
 
-export function initInputUI(s, cam, r, ctrl) {
-    scene = s;
-    camera = cam;
-    rig = r;
-    controller = ctrl;
+let panelRoot = null;
 
-    createPanel();
+let onCreatePoint = null; // Callback für main/vectorUI
+
+export function initInputUI(s, cam, r, ctrl, options = {}) {
+  scene = s;
+  camera = cam;
+  rig = r;
+  controller = ctrl;
+
+  onCreatePoint = options.onCreatePoint ?? null;
+
+  createPanel();
 }
 
 function createPanel() {
+  panelRoot = new THREE.Group();
+  panelRoot.position.set(0, 1.5, -2);
+  scene.add(panelRoot);
 
-    const panel = new THREE.Group();
-    panel.position.set(0, 1.5, -2);
-    scene.add(panel);
+  createRow(panelRoot, 'x', 0);
+  createRow(panelRoot, 'y', -0.4);
+  createRow(panelRoot, 'z', -0.8);
 
-    createRow(panel, "x", 0);
-    createRow(panel, "y", -0.4);
-    createRow(panel, "z", -0.8);
+  const createBtn = makeButton('CREATE', 0, -1.4, () => {
+    if (onCreatePoint) onCreatePoint(values.x, values.y, values.z);
+    else createPoint(values.x, values.y, values.z); // Fallback
+  });
 
-    const createBtn = makeButton("CREATE", 0, -1.4, () => {
-        createPoint(values.x, values.y, values.z);
-    });
-
-    panel.add(createBtn);
-    buttons.push(createBtn);
+  panelRoot.add(createBtn);
+  buttons.push(createBtn);
 }
 
-function createRow(panel, axis, y) {
+function createRow(parent, axis, y) {
+  const text = makeTextSprite(`${axis}: 0`);
+  text.position.set(-0.6, y, 0);
+  parent.add(text);
 
-    const text = makeText(`${axis}: 0`);
-    text.position.set(-0.6, y, 0);
-    panel.add(text);
+  textSprites[axis] = text;
 
-    textMeshes[axis] = text;
+  const plus = makeButton('+', 0.2, y, () => {
+    values[axis] += 1;
+    updateText();
+  });
 
-    const plus = makeButton("+", 0.2, y, () => {
-        values[axis]++;
-        updateText();
-    });
+  const minus = makeButton('-', 0.5, y, () => {
+    values[axis] -= 1;
+    updateText();
+  });
 
-    const minus = makeButton("-", 0.5, y, () => {
-        values[axis]--;
-        updateText();
-    });
-
-    panel.add(plus, minus);
-
-    buttons.push(plus, minus);
+  parent.add(plus, minus);
+  buttons.push(plus, minus);
 }
 
 function updateText() {
-    for (let axis in textMeshes) {
-        const newText = makeText(`${axis}: ${values[axis]}`);
-        newText.position.copy(textMeshes[axis].position);
+  for (const axis in textSprites) {
+    const newSprite = makeTextSprite(`${axis}: ${values[axis]}`);
+    newSprite.position.copy(textSprites[axis].position);
 
-        scene.remove(textMeshes[axis]);
-        textMeshes[axis].material.map.dispose();
-        textMeshes[axis].material.dispose();
+    const old = textSprites[axis];
+    if (old.parent) old.parent.remove(old);
 
-        textMeshes[axis] = newText;
-        scene.add(newText);
-    }
+    textSprites[axis].material.map.dispose?.();
+    textSprites[axis].material.dispose?.();
+
+    textSprites[axis] = newSprite;
+
+    panelRoot.add(newSprite);
+  }
 }
 
 function makeButton(label, x, y, onClick) {
+  const geo = new THREE.BoxGeometry(0.2, 0.2, 0.05);
+  const mat = new THREE.MeshBasicMaterial({ color: 0x4444ff });
+  const mesh = new THREE.Mesh(geo, mat);
 
-    const geo = new THREE.BoxGeometry(0.2, 0.2, 0.05);
-    const mat = new THREE.MeshBasicMaterial({ color: 0x4444ff });
-    const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(x, y, 0);
 
-    mesh.position.set(x, y, 0);
+  mesh.userData.onClick = onClick;
+  mesh.userData.label = label;
 
-    mesh.userData.onClick = onClick;
+  // optional: Label als Sprite oben drauf
+  const spr = makeTextSprite(label);
+  spr.position.set(0, 0, 0.06);
+  mesh.add(spr);
 
-    return mesh;
+  return mesh;
 }
 
-// ✅ NEU: Canvas Text (kein TextGeometry mehr!)
-function makeText(text) {
+function makeTextSprite(text) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
 
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+  canvas.width = 512;
+  canvas.height = 256;
 
-    canvas.width = 256;
-    canvas.height = 128;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    context.fillStyle = "white";
-    context.font = "40px Arial";
-    context.fillText(text, 10, 64);
+  ctx.fillStyle = 'rgba(255,255,255,1)';
+  ctx.font = 'bold 56px Arial';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 20, canvas.height / 2);
 
-    const texture = new THREE.CanvasTexture(canvas);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
 
-    const material = new THREE.SpriteMaterial({ map: texture });
-    const sprite = new THREE.Sprite(material);
+  const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+  const sprite = new THREE.Sprite(mat);
 
-    sprite.scale.set(0.8, 0.4, 1);
+  // Größe so wählen, dass es lesbar ist
+  sprite.scale.set(0.75, 0.35, 1);
 
-    return sprite;
+  return sprite;
 }
 
-// ===== INTERACTION =====
+// ===== Interaktion =====
 
 export function handleUISelection() {
+  if (!controller) return;
+  if (!buttons.length) return;
 
-    tempMatrix.identity().extractRotation(controller.matrixWorld);
+  tempMatrix.identity().extractRotation(controller.matrixWorld);
 
-    raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
-    raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+  const origin = raycaster.ray.origin;
+  const dir = raycaster.ray.direction;
 
-    const intersects = raycaster.intersectObjects(buttons);
+  origin.setFromMatrixPosition(controller.matrixWorld);
+  dir.set(0, 0, -1).applyMatrix4(tempMatrix);
 
-    if (intersects.length > 0) {
-        const obj = intersects[0].object;
+  raycaster.set(origin, dir);
+  raycaster.far = 5;
 
-        if (obj.userData.onClick) {
-            obj.userData.onClick();
-        }
-    }
+  const intersects = raycaster.intersectObjects(buttons, false);
+  if (!intersects.length) return;
+
+  const obj = intersects[0].object;
+  const cb = obj?.userData?.onClick;
+  if (typeof cb === 'function') cb();
 }
 
-// ===== POINT =====
+// ===== Fallback Point Creation =====
 
 function createPoint(x, y, z) {
-
-    const geo = new THREE.SphereGeometry(0.05);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const point = new THREE.Mesh(geo, mat);
-
-    point.position.set(x, y, z);
-
-    scene.add(point);
+  const geo = new THREE.SphereGeometry(0.05, 16, 16);
+  const mat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const point = new THREE.Mesh(geo, mat);
+  point.position.set(x, y, z);
+  scene.add(point);
 }
