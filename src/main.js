@@ -14,13 +14,30 @@ document.body.appendChild(renderer.domElement);
 
 document.body.appendChild(VRButton.createButton(renderer));
 
+/* Würfel */
 const geometry = new THREE.BoxGeometry(1,1,1);
 const material = new THREE.MeshNormalMaterial();
 const cube = new THREE.Mesh(geometry, material);
 scene.add(cube);
 
+/* Controller */
+const controller1 = renderer.xr.getController(0);
+scene.add(controller1);
+
+/* Laserstrahl */
+const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+  new THREE.Vector3(0,0,0),
+  new THREE.Vector3(0,0,-5)
+]);
+
+const line = new THREE.Line(lineGeometry);
+line.scale.z = 5;
+controller1.add(line);
+
+/* Animation */
 renderer.setAnimationLoop(() => {
   cube.rotation.x += 0.01;
   cube.rotation.y += 0.01;
+
   renderer.render(scene, camera);
 });
