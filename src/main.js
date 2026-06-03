@@ -3,6 +3,8 @@ import { initXR } from './core/xr.js';
 import { initControllers, updateControllers } from './core/controllers.js';
 import { initTeleport, updateTeleport } from './core/teleport.js';
 import { initGrid } from './core/grid.js';
+import { initInputUI, handleUISelection } from './core/inputUI.js';
+
 
 
 let scene, camera, renderer;
