@@ -34,9 +34,25 @@ export function initVectorUI(s) {
 export function setVectorFromComponents(x, y, z, opts = {}) {
   if (!scene || !vectorGroup) return;
 
-  // Alte Geometrie entfernen
+  // Alte Geometrie/Material sauber entfernen
   while (vectorGroup.children.length) {
-    vectorGroup.remove(vectorGroup.children[0]);
+    const child = vectorGroup.children[0];
+    vectorGroup.remove(child);
+
+    // dispose nur wenn vorhanden
+    if (child.geometry) child.geometry.dispose?.();
+    if (child.material) {
+      // material kann Array sein
+      if (Array.isArray(child.material)) {
+        for (const m of child.material) {
+          m.map?.dispose?.();
+          m.dispose?.();
+        }
+      } else {
+        child.material.map?.dispose?.();
+        child.material.dispose?.();
+      }
+    }
   }
 
   const start = new THREE.Vector3(0, 0, 0);
@@ -46,7 +62,14 @@ export function setVectorFromComponents(x, y, z, opts = {}) {
   createLine(vectorGroup, [start, end], opts.lineColor ?? 0x00ffcc);
 
   // Endpunkt
-  createPoint(vectorGroup, end.x, end.y, end.z, opts.pointColor ?? 0x00ff00, 0.06);
+  createPoint(
+    vectorGroup,
+    end.x,
+    end.y,
+    end.z,
+    opts.pointColor ?? 0x00ff00,
+    0.06
+  );
 
   // Labels updaten
   updateSprite(labelSprites.vx, `vx: ${x}`);
@@ -80,15 +103,19 @@ function makeTextSprite(text) {
 }
 
 function updateSprite(sprite, text) {
+  if (!sprite?.material?.map?.image) return;
+
   const canvas = sprite.material.map.image;
   const ctx = canvas.getContext('2d');
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   ctx.fillStyle = 'rgba(255,255,255,1)';
   ctx.font = 'bold 46px Arial';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, 20, canvas.height / 2);
 
+  // Wichtig: Texture als neu markieren
   sprite.material.map.needsUpdate = true;
 }
