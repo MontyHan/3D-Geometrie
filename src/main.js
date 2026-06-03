@@ -1,48 +1,59 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/VRButton.js';
+import { initXR } from './core/xr.js';
+import { initControllers, updateControllers } from './core/controllers.js';
 import { initTeleport, updateTeleport } from './core/teleport.js';
 
+let scene, camera, renderer;
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x202020);
+init();
+animate();
 
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 100);
-camera.position.z = 3;
+function init() {
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.xr.enabled = true;
-document.body.appendChild(renderer.domElement);
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x202040);
 
-document.body.appendChild(VRButton.createButton(renderer));
+    camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 100);
 
-/* Würfel */
-const geometry = new THREE.BoxGeometry(1,1,1);
-const material = new THREE.MeshNormalMaterial();
-const cube = new THREE.Mesh(geometry, material);
-scene.add(cube);
+    renderer = new THREE.WebGLRenderer({ antialias:true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
 
-/* Controller */
-const controller1 = renderer.xr.getController(0);
-scene.add(controller1);
+    document.body.appendChild(renderer.domElement);
 
-initTeleport(scene, renderer, camera, controller1);
+    initXR(renderer);
 
-/* Laserstrahl */
-const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-  new THREE.Vector3(0,0,0),
-  new THREE.Vector3(0,0,-5)
-]);
+    // Licht
+    const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
+    scene.add(light);
 
-const line = new THREE.Line(lineGeometry);
-line.scale.z = 5;
-controller1.add(line);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(3,6,4);
+    scene.add(dirLight);
 
-/* Animation */
-renderer.setAnimationLoop(() => {
-  cube.rotation.x += 0.01;
-  cube.rotation.y += 0.01;
-  updateTeleport();
+    // Boden
+    const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(40,40),
+        new THREE.MeshStandardMaterial({ color:0x222222 })
+    );
+    floor.rotation.x = -Math.PI/2;
+    scene.add(floor);
 
-  renderer.render(scene, camera);
-});
+    // Koordinatensystem
+    const axes = new THREE.AxesHelper(5);
+    scene.add(axes);
+
+    // Systeme
+    initControllers(renderer, scene);
+    initTeleport(renderer, scene, camera);
+}
+
+function animate() {
+    renderer.setAnimationLoop(() => {
+
+        updateControllers();
+        updateTeleport();
+
+        renderer.render(scene, camera);
+    });
+}
