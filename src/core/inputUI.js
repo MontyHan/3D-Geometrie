@@ -62,11 +62,15 @@ function createRow(panel, axis, y) {
 
 function updateText() {
     for (let axis in textMeshes) {
-        textMeshes[axis].geometry.dispose();
-        textMeshes[axis].geometry = new THREE.TextGeometry(
-            `${axis}: ${values[axis]}`,
-            { size: 0.1, height: 0.01 }
-        );
+        const newText = makeText(`${axis}: ${values[axis]}`);
+        newText.position.copy(textMeshes[axis].position);
+
+        scene.remove(textMeshes[axis]);
+        textMeshes[axis].material.map.dispose();
+        textMeshes[axis].material.dispose();
+
+        textMeshes[axis] = newText;
+        scene.add(newText);
     }
 }
 
@@ -83,13 +87,27 @@ function makeButton(label, x, y, onClick) {
     return mesh;
 }
 
+// ✅ NEU: Canvas Text (kein TextGeometry mehr!)
 function makeText(text) {
-    const geo = new THREE.TextGeometry(text, {
-        size: 0.1,
-        height: 0.01
-    });
-    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    return new THREE.Mesh(geo, mat);
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    canvas.width = 256;
+    canvas.height = 128;
+
+    context.fillStyle = "white";
+    context.font = "40px Arial";
+    context.fillText(text, 10, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+
+    const material = new THREE.SpriteMaterial({ map: texture });
+    const sprite = new THREE.Sprite(material);
+
+    sprite.scale.set(0.8, 0.4, 1);
+
+    return sprite;
 }
 
 // ===== INTERACTION =====
@@ -112,7 +130,7 @@ export function handleUISelection() {
     }
 }
 
-// ===== POINT (minimal erstmal hier drin) =====
+// ===== POINT =====
 
 function createPoint(x, y, z) {
 
