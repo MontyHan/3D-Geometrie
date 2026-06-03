@@ -1,5 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/VRButton.js';
+import { initTeleport, updateTeleport } from './core/teleport.js';
+
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x202020);
@@ -24,6 +26,7 @@ scene.add(cube);
 const controller1 = renderer.xr.getController(0);
 scene.add(controller1);
 
+initTeleport(scene, renderer, camera, controller1);
 
 /* Laserstrahl */
 const lineGeometry = new THREE.BufferGeometry().setFromPoints([
@@ -39,6 +42,7 @@ controller1.add(line);
 renderer.setAnimationLoop(() => {
   cube.rotation.x += 0.01;
   cube.rotation.y += 0.01;
+  updateTeleport();
 
   renderer.render(scene, camera);
 });
