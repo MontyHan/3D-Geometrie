@@ -34,8 +34,12 @@ function createPanel() {
   createRow(panelRoot, 'z', -0.8);
 
   const createBtn = makeButton('CREATE', 0, -1.4, () => {
-    if (onCreatePoint) onCreatePoint(values.x, values.y, values.z);
-    else createPoint(values.x, values.y, values.z); // Fallback
+    const x = values.x;
+    const y = values.y;
+    const z = values.z;
+
+    if (onCreatePoint) onCreatePoint(x, y, z);
+    else createPoint(x, y, z); // Fallback
   });
 
   panelRoot.add(createBtn);
@@ -46,7 +50,6 @@ function createRow(parent, axis, y) {
   const text = makeTextSprite(`${axis}: 0`);
   text.position.set(-0.6, y, 0);
   parent.add(text);
-
   textSprites[axis] = text;
 
   const plus = makeButton('+', 0.2, y, () => {
@@ -65,17 +68,18 @@ function createRow(parent, axis, y) {
 
 function updateText() {
   for (const axis in textSprites) {
+    const oldSprite = textSprites[axis];
+
     const newSprite = makeTextSprite(`${axis}: ${values[axis]}`);
-    newSprite.position.copy(textSprites[axis].position);
+    newSprite.position.copy(oldSprite.position);
 
-    const old = textSprites[axis];
-    if (old.parent) old.parent.remove(old);
+    if (oldSprite.parent) oldSprite.parent.remove(oldSprite);
 
-    textSprites[axis].material.map.dispose?.();
-    textSprites[axis].material.dispose?.();
+    // dispose alt (Texturen/Material)
+    if (oldSprite.material?.map) oldSprite.material.map.dispose?.();
+    oldSprite.material?.dispose?.();
 
     textSprites[axis] = newSprite;
-
     panelRoot.add(newSprite);
   }
 }
@@ -90,7 +94,7 @@ function makeButton(label, x, y, onClick) {
   mesh.userData.onClick = onClick;
   mesh.userData.label = label;
 
-  // optional: Label als Sprite oben drauf
+  // Label als Sprite oben drauf
   const spr = makeTextSprite(label);
   spr.position.set(0, 0, 0.06);
   mesh.add(spr);
@@ -119,7 +123,6 @@ function makeTextSprite(text) {
   const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
   const sprite = new THREE.Sprite(mat);
 
-  // Größe so wählen, dass es lesbar ist
   sprite.scale.set(0.75, 0.35, 1);
 
   return sprite;
@@ -131,6 +134,7 @@ export function handleUISelection() {
   if (!controller) return;
   if (!buttons.length) return;
 
+  // Forward Richtung aus Controller-Rotation
   tempMatrix.identity().extractRotation(controller.matrixWorld);
 
   const origin = raycaster.ray.origin;
@@ -145,8 +149,8 @@ export function handleUISelection() {
   const intersects = raycaster.intersectObjects(buttons, false);
   if (!intersects.length) return;
 
-  const obj = intersects[0].object;
-  const cb = obj?.userData?.onClick;
+  const hitMesh = intersects[0].object;
+  const cb = hitMesh?.userData?.onClick;
   if (typeof cb === 'function') cb();
 }
 
