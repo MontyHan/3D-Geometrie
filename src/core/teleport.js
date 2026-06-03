@@ -1,4 +1,3 @@
-code = """// === TELEPORT MODULE (Modul 2) ===
 // Datei: src/core/teleport.js
 // Diese Datei wird in main.js importiert
 
@@ -82,7 +81,3 @@ export function setupTeleport(renderer, scene, camera) {
 
     return { update };
 }
-"""
-
-with open("teleport_module.js", "w") as f:
-    f.write(code)
