@@ -1,16 +1,23 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
 import { initXR } from './core/xr.js';
 import { initControllers, updateControllers } from './core/controllers.js';
 import { initTeleport, updateTeleport } from './core/teleport.js';
 import { initGrid } from './core/grid.js';
 
 import { initInputUI } from './core/inputUI.js';
-import { initVectorUI, setVectorFromComponents } from './core/vectorUI.js';
+import {
+  initVectorUI,
+  setVectorFromComponents,
+  addOrtsvektorForPoint,
+  handleControllerButtons
+} from './core/vectorUI.js';
+
 import { createPoint } from './core/geometryFactory.js';
-import { addOrtsvektorForPoint } from './core/vectorUI.js';
 
 let scene, camera, renderer;
 let rig;
+let controllers; // ✅ wichtig für später
 
 init();
 animate();
@@ -21,7 +28,7 @@ function init() {
 
   // ✅ Rig (Spieler)
   rig = new THREE.Group();
-  rig.position.set(5, 5, 2); // ✅ STARTPOSITION
+  rig.position.set(5, 5, 2);
   scene.add(rig);
 
   // ✅ Kamera INS Rig
@@ -63,7 +70,10 @@ function init() {
   scene.add(axes);
 
   // ✅ Controller
-  const controllers = initControllers(renderer, rig);
+  controllers = initControllers(renderer, rig);
+
+  // ✅ Vector UI (vor Input initialisieren → sauberer)
+  initVectorUI(scene);
 
   // ✅ UI an rechten Controller
   initInputUI(scene, camera, rig, controllers.right, {
@@ -75,21 +85,24 @@ function init() {
         pointColor: 0x00ff00
       });
 
+      // ✅ nutzt automatisch A, B, C Labels
       addOrtsvektorForPoint(p, x, y, z);
     }
   });
 
   // ✅ Teleport nutzt Rig
   initTeleport(renderer, scene, rig);
-
-  // ✅ Vektor UI
-  initVectorUI(scene);
 }
 
 function animate() {
   renderer.setAnimationLoop(() => {
     updateControllers();
     updateTeleport();
+
+    // ✅ 🔥 Controller-Buttons (A / X Toggle)
+    if (controllers?.left) handleControllerButtons(controllers.left);
+    if (controllers?.right) handleControllerButtons(controllers.right);
+
     renderer.render(scene, camera);
   });
 }
