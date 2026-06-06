@@ -150,7 +150,7 @@ export function handleUISelection() {
   raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
   raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
 
-  raycaster.far = 5;
+  raycaster.far = 20;
 
   const intersects = raycaster.intersectObjects(buttons, false);
   if (!intersects.length) return;
