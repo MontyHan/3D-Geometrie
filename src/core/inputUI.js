@@ -22,6 +22,9 @@ export function initInputUI(s, cam, r, ctrl, options = {}) {
   onCreatePoint = options.onCreatePoint ?? null;
 
   createPanel();
+
+  // ✅🔥 WICHTIG: Event registrieren (hat dir komplett gefehlt)
+  controller.addEventListener('selectstart', handleUISelection);
 }
 
 function createPanel() {
@@ -39,7 +42,7 @@ function createPanel() {
     const z = values.z;
 
     if (onCreatePoint) onCreatePoint(x, y, z);
-    else createPoint(x, y, z); // Fallback
+    else createPoint(x, y, z);
   });
 
   panelRoot.add(createBtn);
@@ -75,7 +78,6 @@ function updateText() {
 
     if (oldSprite.parent) oldSprite.parent.remove(oldSprite);
 
-    // dispose alt (Texturen/Material)
     if (oldSprite.material?.map) oldSprite.material.map.dispose?.();
     oldSprite.material?.dispose?.();
 
@@ -94,7 +96,6 @@ function makeButton(label, x, y, onClick) {
   mesh.userData.onClick = onClick;
   mesh.userData.label = label;
 
-  // Label als Sprite oben drauf
   const spr = makeTextSprite(label);
   spr.position.set(0, 0, 0.06);
   mesh.add(spr);
@@ -113,9 +114,11 @@ function makeTextSprite(text) {
 
   ctx.fillStyle = 'rgba(255,255,255,1)';
   ctx.font = 'bold 56px Arial';
-  ctx.textAlign = 'left';
+
+  // ✅ sauber zentriert
+  ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, 20, canvas.height / 2);
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;
@@ -134,22 +137,18 @@ export function handleUISelection() {
   if (!controller) return;
   if (!buttons.length) return;
 
-  // Forward Richtung aus Controller-Rotation
   tempMatrix.identity().extractRotation(controller.matrixWorld);
 
-  const origin = raycaster.ray.origin;
-  const dir = raycaster.ray.direction;
+  raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+  raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
 
-  origin.setFromMatrixPosition(controller.matrixWorld);
-  dir.set(0, 0, -1).applyMatrix4(tempMatrix);
-
-  raycaster.set(origin, dir);
   raycaster.far = 5;
 
   const intersects = raycaster.intersectObjects(buttons, false);
   if (!intersects.length) return;
 
   const hitMesh = intersects[0].object;
+
   const cb = hitMesh?.userData?.onClick;
   if (typeof cb === 'function') cb();
 }
