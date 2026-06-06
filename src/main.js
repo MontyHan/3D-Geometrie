@@ -108,3 +108,21 @@ function init() {
 
       // ✅ Ortsvektor korrekt
       addOrtsvektorForPoint(p, x, y, z);
+
+      // optional UI Sync
+      setVectorFromComponents(x, y, z, { line: null });
+    }
+  });
+}
+
+function animate() {
+  renderer.setAnimationLoop(() => {
+    updateControllers(controllers);
+    updateTeleport(controllers, rig);
+
+    // ✅ erstmal nur rechter Controller (verhindert Teleport-Konflikt)
+    handleControllerButtons(controllers.right);
+
+    renderer.render(scene, camera);
+  });
+}
