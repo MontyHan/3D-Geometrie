@@ -3,13 +3,18 @@ import { createLine, createPoint } from './geometryFactory.js';
 
 let scene;
 
-let vectorGroup = null;     // für aktuellen UI-Vektor
+let vectorGroup = null;     // aktueller UI-Vektor
 let spriteRoot = null;
 
 let labelSprites = {};
 
-// ✅ NEU: Gruppe für ALLE Ortsvektoren
+// ✅ Gruppe für ALLE Ortsvektoren
 let ortsvektorGroup = null;
+
+// ✅ Sichtbarkeit + Toggle-Logik
+let ortsvektorenVisible = true;
+let lastToggleTime = 0;
+const TOGGLE_DELAY = 300;
 
 export function initVectorUI(s) {
   scene = s;
@@ -17,7 +22,6 @@ export function initVectorUI(s) {
   vectorGroup = new THREE.Group();
   scene.add(vectorGroup);
 
-  // ✅ NEU
   ortsvektorGroup = new THREE.Group();
   scene.add(ortsvektorGroup);
 
@@ -41,7 +45,7 @@ export function initVectorUI(s) {
 export function setVectorFromComponents(x, y, z, opts = {}) {
   if (!scene || !vectorGroup) return;
 
-  // Alte Geometrie/Material sauber entfernen
+  // ✅ Alte Geometrie sauber entfernen
   while (vectorGroup.children.length) {
     const child = vectorGroup.children[0];
     vectorGroup.remove(child);
@@ -80,9 +84,9 @@ export function setVectorFromComponents(x, y, z, opts = {}) {
 }
 
 //
-// ✅ NEU: Ortsvektor pro Punkt
+// ✅ Ortsvektor pro Punkt
 //
-export function addOrtsvektorForPoint(point, x, y, z, index) {
+export function addOrtsvektorForPoint(point, x, y, z, index = '') {
   if (!ortsvektorGroup) return;
 
   const group = new THREE.Group();
@@ -90,13 +94,13 @@ export function addOrtsvektorForPoint(point, x, y, z, index) {
   const start = new THREE.Vector3(0, 0, 0);
   const end = new THREE.Vector3(x, y, z);
 
-  // Linie
+  // ✅ Linie
   const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
   const material = new THREE.LineBasicMaterial({ color: 0x00ffcc });
   const line = new THREE.Line(geometry, material);
   group.add(line);
 
-  // Pfeil
+  // ✅ Pfeil
   const dir = end.clone().normalize();
   const length = end.length();
 
@@ -110,20 +114,19 @@ export function addOrtsvektorForPoint(point, x, y, z, index) {
   );
   group.add(arrow);
 
-  // Label
-  const sprite = makeTextSprite(`r${index} = (${x}/${y}/${z})`);
+  // ✅ Label (nutzt Punktname!)
+  const name = point.userData.label ?? '';
+  const sprite = makeTextSprite(`r${name} = (${x}/${y}/${z})`);
   sprite.position.set(x + 0.25, y + 0.25, z);
   group.add(sprite);
 
-  // in globale Gruppe
   ortsvektorGroup.add(group);
 
-  // Referenz speichern (für später!)
   point.userData.ortsvektor = group;
 }
 
 //
-// ✅ OPTIONAL (wird dir später extrem helfen)
+// ✅ Toggle (manuell)
 //
 export function toggleOrtsvektoren(visible) {
   if (!ortsvektorGroup) return;
@@ -131,7 +134,31 @@ export function toggleOrtsvektoren(visible) {
 }
 
 //
-// 🔧 bestehende helpers (unverändert)
+// ✅ Controller-Input (A / X Button)
+//
+export function handleControllerButtons(controller) {
+  if (!controller || !controller.gamepad) return;
+
+  const now = performance.now();
+  if (now - lastToggleTime < TOGGLE_DELAY) return;
+
+  const buttons = controller.gamepad.buttons;
+
+  // ✅ A / X Button
+  if (buttons[4]?.pressed) {
+    ortsvektorenVisible = !ortsvektorenVisible;
+    toggleOrtsvektoren(ortsvektorenVisible);
+
+    lastToggleTime = now;
+
+    console.log(
+      `Ortsvektoren: ${ortsvektorenVisible ? 'AN' : 'AUS'}`
+    );
+  }
+}
+
+//
+// 🔧 Helper
 //
 function makeTextSprite(text) {
   const canvas = document.createElement('canvas');
