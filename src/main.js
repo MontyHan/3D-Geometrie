@@ -19,6 +19,11 @@ let scene, camera, renderer;
 let rig;
 let controllers;
 
+// ✅ Mapping Funktion (Mathe → Three.js)
+function mathToThree(x, y, z) {
+  return new THREE.Vector3(y, z, x);
+}
+
 init();
 animate();
 
@@ -67,7 +72,7 @@ function init() {
   floor.rotation.x = -Math.PI / 2;
   scene.add(floor);
 
-  // ✅ ACHSEN (Mathe-konform für SuS)
+  // ✅ ACHSEN (dein System: x=vorne, y=rechts, z=oben)
 
   const axisLength = 5;
 
@@ -81,15 +86,15 @@ function init() {
     return new THREE.Line(geometry, material);
   }
 
-  // 🔵 X-Achse (BLAU)
-  const xAxis = createAxis(new THREE.Vector3(1, 0, 0), 0x0000ff);
+  // 🔵 X-Achse (vorne)
+  const xAxis = createAxis(new THREE.Vector3(0, 0, 1), 0x0000ff);
   scene.add(xAxis);
 
-  // 🔴 Y-Achse (ROT)
-  const yAxis = createAxis(new THREE.Vector3(0, 0, 1), 0xff0000);
+  // 🔴 Y-Achse (rechts)
+  const yAxis = createAxis(new THREE.Vector3(1, 0, 0), 0xff0000);
   scene.add(yAxis);
 
-  // 🟢 Z-Achse (GRÜN nach oben)
+  // 🟢 Z-Achse (oben)
   const zAxis = createAxis(new THREE.Vector3(0, 1, 0), 0x00ff00);
   scene.add(zAxis);
 
@@ -102,7 +107,9 @@ function init() {
   // ✅ Input UI
   initInputUI(scene, camera, rig, controllers.right, {
     onCreatePoint: (x, y, z) => {
-      const p = createPoint(scene, x, y, z, 0xff0000, 0.05);
+      const pos = mathToThree(x, y, z);
+
+      const p = createPoint(scene, pos.x, pos.y, pos.z, 0xff0000, 0.05);
 
       setVectorFromComponents(x, y, z, {
         line: null
@@ -118,7 +125,6 @@ function animate() {
     updateControllers(controllers);
     updateTeleport(controllers, rig);
 
-    // 🎮 Buttons (A / Trigger etc.)
     handleControllerButtons(controllers.left);
     handleControllerButtons(controllers.right);
 
