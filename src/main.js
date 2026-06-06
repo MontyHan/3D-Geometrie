@@ -7,6 +7,8 @@ import { initGrid } from './core/grid.js';
 import { initInputUI, handleUISelection } from './core/inputUI.js';
 import { initVectorUI, setVectorFromComponents } from './core/vectorUI.js';
 import { createPoint } from './core/geometryFactory.js';
+import { addOrtsvektorForPoint } from './core/vectorUI.js';
+
 
 let scene, camera, renderer;
 let rig;
@@ -65,16 +67,20 @@ function init() {
 
   // ✅ UI an linken Controller hängen
   initInputUI(scene, camera, rig, controllers.left, {
-    onCreatePoint: (x, y, z) => {
-      // Punkt anzeigen
-      createPoint(scene, x, y, z, 0xff0000, 0.05);
+   onCreatePoint: (x, y, z) => {
+  // ✅ Punkt speichern (WICHTIG)
+  const p = createPoint(scene, x, y, z, 0xff0000, 0.05);
 
-      // Vektor anzeigen (inkl. vx, vy, vz Labels)
-      setVectorFromComponents(x, y, z, {
-        lineColor: 0x00ffcc,
-        pointColor: 0x00ff00
-      });
-    }
+  // ✅ dein bestehender "aktueller" Vektor bleibt
+  setVectorFromComponents(x, y, z, {
+    lineColor: 0x00ffcc,
+    pointColor: 0x00ff00
+  });
+
+  // ✅ NEU: zusätzlicher Ortsvektor (bleibt dauerhaft)
+  addOrtsvektorForPoint(p, x, y, z);
+}
+
   });
 
   // UI Interaktion
