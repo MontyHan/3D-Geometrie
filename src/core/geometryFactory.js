@@ -7,15 +7,21 @@ const SCALE = 0.5;
 let pointIndex = 0;
 
 // ✅ Achsen-Mapping (Mathe → Three.js)
-// Mathe:
-// x = blau → Three.js Z
-// y = rot  → Three.js X
-// z = grün → Three.js Y
-function mapAxes(x, y, z) {
+// Mathe-System:
+// (x, y, z) = (vorne, rechts, oben)
+//
+// Three.js:
+// (x, y, z) = (rechts, oben, vorne)
+//
+// 👉 Mapping:
+// x (vorne)  → Z
+// y (rechts) → X
+// z (oben)   → Y
+export function mapAxes(x, y, z) {
   return new THREE.Vector3(
-    y * SCALE, // → X (rot)
-    z * SCALE, // → Y (grün / oben)
-    x * SCALE  // → Z (blau)
+    y * SCALE, // → X
+    z * SCALE, // → Y
+    x * SCALE  // → Z
   );
 }
 
@@ -52,9 +58,12 @@ function createTextSprite(text) {
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;
 
-  const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-  const sprite = new THREE.Sprite(material);
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true
+  });
 
+  const sprite = new THREE.Sprite(material);
   sprite.scale.set(0.5, 0.25, 1);
 
   return sprite;
@@ -65,11 +74,11 @@ export function createPoint(scene, x, y, z, color = 0xff0000, radius = 0.05) {
   const mat = new THREE.MeshBasicMaterial({ color });
   const point = new THREE.Mesh(geo, mat);
 
-  // ✅ korrektes Mapping
+  // ✅ korrektes Mapping anwenden
   const pos = mapAxes(x, y, z);
   point.position.copy(pos);
 
-  // ✅ Label
+  // ✅ Label erzeugen
   const label = getNextLabel();
   const sprite = createTextSprite(label);
 
