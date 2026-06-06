@@ -95,4 +95,106 @@ export function addOrtsvektorForPoint(point, x, y, z) {
   const end = mapAxes(x, y, z);
 
   // ✅ Linie
- 
+  const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+  const material = new THREE.LineBasicMaterial({ color: 0x00ffcc });
+  const line = new THREE.Line(geometry, material);
+  group.add(line);
+
+  // ✅ Pfeil
+  const dir = end.clone().normalize();
+  const length = end.length();
+
+  const arrow = new THREE.ArrowHelper(
+    dir,
+    start,
+    length,
+    0x00ffcc,
+    0.2,
+    0.1
+  );
+  group.add(arrow);
+
+  // ✅ Label → auch gemappt!
+  const name = point.userData.label ?? '';
+  const sprite = makeTextSprite(`r${name} = (${x}/${y}/${z})`);
+
+  const labelPos = mapAxes(x, y, z);
+  labelPos.add(new THREE.Vector3(0.2, 0.2, 0.2));
+  sprite.position.copy(labelPos);
+
+  group.add(sprite);
+
+  ortsvektorGroup.add(group);
+
+  point.userData.ortsvektor = group;
+}
+
+export function toggleOrtsvektoren(visible) {
+  if (!ortsvektorGroup) return;
+  ortsvektorGroup.visible = visible;
+}
+
+export function handleControllerButtons(controller) {
+  if (!controller || !controller.gamepad) return;
+
+  const now = performance.now();
+  if (now - lastToggleTime < TOGGLE_DELAY) return;
+
+  const buttons = controller.gamepad.buttons;
+
+  if (buttons[4]?.pressed) {
+    ortsvektorenVisible = !ortsvektorenVisible;
+    toggleOrtsvektoren(ortsvektorenVisible);
+
+    lastToggleTime = now;
+
+    console.log(
+      `Ortsvektoren: ${ortsvektorenVisible ? 'AN' : 'AUS'}`
+    );
+  }
+}
+
+//
+// 🔧 Helper
+//
+function makeTextSprite(text) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  canvas.width = 512;
+  canvas.height = 256;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = 'rgba(255,255,255,1)';
+  ctx.font = 'bold 46px Arial';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 20, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+
+  const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(0.95, 0.36, 1);
+
+  return sprite;
+}
+
+function updateSprite(sprite, text) {
+  if (!sprite?.material?.map?.image) return;
+
+  const canvas = sprite.material.map.image;
+  const ctx = canvas.getContext('2d');
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = 'rgba(255,255,255,1)';
+  ctx.font = 'bold 46px Arial';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 20, canvas.height / 2);
+
+  sprite.material.map.needsUpdate = true;
+}
