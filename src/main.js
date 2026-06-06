@@ -26,9 +26,9 @@ function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x202040);
 
-  // ✅ Rig (Spieler)
+  // ✅ Rig (Spieler) → Start auf Höhe 1
   rig = new THREE.Group();
-  rig.position.set(5, 5, 2);
+  rig.position.set(0, 1, 3);
   scene.add(rig);
 
   // ✅ Kamera INS Rig
@@ -40,7 +40,6 @@ function init() {
   );
   rig.add(camera);
 
-  // ✅ Startblick auf Ursprung
   camera.lookAt(0, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -68,7 +67,7 @@ function init() {
   floor.rotation.x = -Math.PI / 2;
   scene.add(floor);
 
-  // ✅ ✅ ✅ EIGENE ACHSEN (DEIN SYSTEM)
+  // ✅ ACHSEN (Mathe-konform für SuS)
 
   const axisLength = 5;
 
@@ -82,15 +81,15 @@ function init() {
     return new THREE.Line(geometry, material);
   }
 
-  // 🔵 X-Achse (BLAU) → entspricht Three.js Z
-  const xAxis = createAxis(new THREE.Vector3(0, 0, 1), 0x0000ff);
+  // 🔵 X-Achse (BLAU)
+  const xAxis = createAxis(new THREE.Vector3(1, 0, 0), 0x0000ff);
   scene.add(xAxis);
 
-  // 🔴 Y-Achse (ROT) → entspricht Three.js X
-  const yAxis = createAxis(new THREE.Vector3(1, 0, 0), 0xff0000);
+  // 🔴 Y-Achse (ROT)
+  const yAxis = createAxis(new THREE.Vector3(0, 0, 1), 0xff0000);
   scene.add(yAxis);
 
-  // 🟢 Z-Achse (GRÜN, nach oben) → entspricht Three.js Y
+  // 🟢 Z-Achse (GRÜN nach oben)
   const zAxis = createAxis(new THREE.Vector3(0, 1, 0), 0x00ff00);
   scene.add(zAxis);
 
@@ -100,31 +99,28 @@ function init() {
   // ✅ Vector UI
   initVectorUI(scene);
 
-  // ✅ UI
+  // ✅ Input UI
   initInputUI(scene, camera, rig, controllers.right, {
     onCreatePoint: (x, y, z) => {
       const p = createPoint(scene, x, y, z, 0xff0000, 0.05);
 
       setVectorFromComponents(x, y, z, {
-        lineColor: 0x00ffcc,
-        pointColor: 0x00ff00
+        line: null
       });
 
-      addOrtsvektorForPoint(p, x, y, z);
+      addOrtsvektorForPoint(scene, p);
     }
   });
-
-  // ✅ Teleport
-  initTeleport(renderer, scene, rig);
 }
 
 function animate() {
   renderer.setAnimationLoop(() => {
-    updateControllers();
-    updateTeleport();
+    updateControllers(controllers);
+    updateTeleport(controllers, rig);
 
-    if (controllers?.left) handleControllerButtons(controllers.left);
-    if (controllers?.right) handleControllerButtons(controllers.right);
+    // 🎮 Buttons (A / Trigger etc.)
+    handleControllerButtons(controllers.left);
+    handleControllerButtons(controllers.right);
 
     renderer.render(scene, camera);
   });
