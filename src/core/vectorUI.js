@@ -3,16 +3,23 @@ import { createLine, createPoint } from './geometryFactory.js';
 
 let scene;
 
-let vectorGroup = null;
+let vectorGroup = null;     // für aktuellen UI-Vektor
 let spriteRoot = null;
 
 let labelSprites = {};
+
+// ✅ NEU: Gruppe für ALLE Ortsvektoren
+let ortsvektorGroup = null;
 
 export function initVectorUI(s) {
   scene = s;
 
   vectorGroup = new THREE.Group();
   scene.add(vectorGroup);
+
+  // ✅ NEU
+  ortsvektorGroup = new THREE.Group();
+  scene.add(ortsvektorGroup);
 
   spriteRoot = new THREE.Group();
   spriteRoot.position.set(1.2, 1.7, -2);
@@ -39,10 +46,8 @@ export function setVectorFromComponents(x, y, z, opts = {}) {
     const child = vectorGroup.children[0];
     vectorGroup.remove(child);
 
-    // dispose nur wenn vorhanden
     if (child.geometry) child.geometry.dispose?.();
     if (child.material) {
-      // material kann Array sein
       if (Array.isArray(child.material)) {
         for (const m of child.material) {
           m.map?.dispose?.();
@@ -58,10 +63,8 @@ export function setVectorFromComponents(x, y, z, opts = {}) {
   const start = new THREE.Vector3(0, 0, 0);
   const end = new THREE.Vector3(x, y, z);
 
-  // Vektor Linie
   createLine(vectorGroup, [start, end], opts.lineColor ?? 0x00ffcc);
 
-  // Endpunkt
   createPoint(
     vectorGroup,
     end.x,
@@ -71,12 +74,65 @@ export function setVectorFromComponents(x, y, z, opts = {}) {
     0.06
   );
 
-  // Labels updaten
   updateSprite(labelSprites.vx, `vx: ${x}`);
   updateSprite(labelSprites.vy, `vy: ${y}`);
   updateSprite(labelSprites.vz, `vz: ${z}`);
 }
 
+//
+// ✅ NEU: Ortsvektor pro Punkt
+//
+export function addOrtsvektorForPoint(point, x, y, z, index) {
+  if (!ortsvektorGroup) return;
+
+  const group = new THREE.Group();
+
+  const start = new THREE.Vector3(0, 0, 0);
+  const end = new THREE.Vector3(x, y, z);
+
+  // Linie
+  const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+  const material = new THREE.LineBasicMaterial({ color: 0x00ffcc });
+  const line = new THREE.Line(geometry, material);
+  group.add(line);
+
+  // Pfeil
+  const dir = end.clone().normalize();
+  const length = end.length();
+
+  const arrow = new THREE.ArrowHelper(
+    dir,
+    start,
+    length,
+    0x00ffcc,
+    0.2,
+    0.1
+  );
+  group.add(arrow);
+
+  // Label
+  const sprite = makeTextSprite(`r${index} = (${x}/${y}/${z})`);
+  sprite.position.set(x + 0.25, y + 0.25, z);
+  group.add(sprite);
+
+  // in globale Gruppe
+  ortsvektorGroup.add(group);
+
+  // Referenz speichern (für später!)
+  point.userData.ortsvektor = group;
+}
+
+//
+// ✅ OPTIONAL (wird dir später extrem helfen)
+//
+export function toggleOrtsvektoren(visible) {
+  if (!ortsvektorGroup) return;
+  ortsvektorGroup.visible = visible;
+}
+
+//
+// 🔧 bestehende helpers (unverändert)
+//
 function makeTextSprite(text) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -116,6 +172,5 @@ function updateSprite(sprite, text) {
   ctx.textBaseline = 'middle';
   ctx.fillText(text, 20, canvas.height / 2);
 
-  // Wichtig: Texture als neu markieren
   sprite.material.map.needsUpdate = true;
 }
