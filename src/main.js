@@ -106,4 +106,26 @@ function init() {
       const p = createPoint(scene, x, y, z, 0xff0000, 0.05);
 
       setVectorFromComponents(x, y, z, {
-        line
+        lineColor: 0x00ffcc,
+        pointColor: 0x00ff00
+      });
+
+      addOrtsvektorForPoint(p, x, y, z);
+    }
+  });
+
+  // ✅ Teleport
+  initTeleport(renderer, scene, rig);
+}
+
+function animate() {
+  renderer.setAnimationLoop(() => {
+    updateControllers();
+    updateTeleport();
+
+    if (controllers?.left) handleControllerButtons(controllers.left);
+    if (controllers?.right) handleControllerButtons(controllers.right);
+
+    renderer.render(scene, camera);
+  });
+}
