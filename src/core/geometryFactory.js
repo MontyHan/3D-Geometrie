@@ -7,24 +7,15 @@ const SCALE = 0.5;
 let pointIndex = 0;
 
 // ✅ Achsen-Mapping (Mathe → Three.js)
-// Mathe-System:
-// (x, y, z) = (vorne, rechts, oben)
-//
-// Three.js:
-// (x, y, z) = (rechts, oben, vorne)
-//
-// 👉 Mapping:
-// x (vorne)  → Z
-// y (rechts) → X
-// z (oben)   → Y
 export function mapAxes(x, y, z) {
   return new THREE.Vector3(
-    y * SCALE, // → X
-    z * SCALE, // → Y
-    x * SCALE  // → Z
+    y * SCALE, // → X (rechts)
+    z * SCALE, // → Y (oben)
+    x * SCALE  // → Z (vorne)
   );
 }
 
+// ✅ Label Generator (A, B, C, ..., AA, AB, ...)
 function getNextLabel() {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -40,6 +31,7 @@ function getNextLabel() {
   return label;
 }
 
+// ✅ Text Sprite
 function createTextSprite(text) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -69,37 +61,37 @@ function createTextSprite(text) {
   return sprite;
 }
 
-export function createPoint(scene, x, y, z, color = 0xff0000, radius = 0.05) {
+// ✅ Punkt erstellen
+export function createPoint(parent, x, y, z, color = 0xff0000, radius = 0.05) {
   const geo = new THREE.SphereGeometry(radius, 16, 16);
   const mat = new THREE.MeshBasicMaterial({ color });
   const point = new THREE.Mesh(geo, mat);
 
-  // ✅ korrektes Mapping anwenden
   const pos = mapAxes(x, y, z);
   point.position.copy(pos);
 
-  // ✅ Label erzeugen
+  // ✅ Label
   const label = getNextLabel();
   const sprite = createTextSprite(label);
-
   sprite.position.set(0, 0.15, 0);
   point.add(sprite);
 
   point.userData.label = label;
 
-  scene.add(point);
+  parent.add(point);
 
   return point;
 }
 
-export function createLine(scene, points, color = 0x00ffcc) {
-  // ✅ Mapping auf alle Punkte anwenden
+// ✅ Linie erstellen
+export function createLine(parent, points, color = 0x00ffcc) {
   const mappedPoints = points.map(p => mapAxes(p.x, p.y, p.z));
 
   const geo = new THREE.BufferGeometry().setFromPoints(mappedPoints);
   const mat = new THREE.LineBasicMaterial({ color });
   const line = new THREE.Line(geo, mat);
 
-  scene.add(line);
+  parent.add(line);
+
   return line;
 }
