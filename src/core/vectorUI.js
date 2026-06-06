@@ -86,13 +86,14 @@ export function setVectorFromComponents(x, y, z, opts = {}) {
 // ✅ Ortsvektor (FIXED)
 //
 export function addOrtsvektorForPoint(point, x, y, z) {
-  if (!ortsvektorGroup) return;
+  if (!ortsvektorGroup || !point) return;
 
   const group = new THREE.Group();
 
-  // ✅ Mapping anwenden
   const start = new THREE.Vector3(0, 0, 0);
-  const end = mapAxes(x, y, z);
+
+  // ✅ Position DIREKT vom Punkt übernehmen (kein mapAxes mehr!)
+  const end = point.position.clone();
 
   // ✅ Linie
   const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
@@ -114,12 +115,11 @@ export function addOrtsvektorForPoint(point, x, y, z) {
   );
   group.add(arrow);
 
-  // ✅ Label → auch gemappt!
+  // ✅ Label
   const name = point.userData.label ?? '';
   const sprite = makeTextSprite(`r${name} = (${x}/${y}/${z})`);
 
-  const labelPos = mapAxes(x, y, z);
-  labelPos.add(new THREE.Vector3(0.2, 0.2, 0.2));
+  const labelPos = end.clone().add(new THREE.Vector3(0.2, 0.2, 0.2));
   sprite.position.copy(labelPos);
 
   group.add(sprite);
