@@ -1,11 +1,71 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
+// ✅ globaler Zähler für Punktnamen
+let pointIndex = 0;
+
+function getNextLabel() {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+  // Für später: auch AA, AB, ... möglich
+  let label = '';
+  let i = pointIndex;
+
+  do {
+    label = alphabet[i % 26] + label;
+    i = Math.floor(i / 26) - 1;
+  } while (i >= 0);
+
+  pointIndex++;
+  return label;
+}
+
+function createTextSprite(text) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  canvas.width = 256;
+  canvas.height = 128;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 48px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+  const sprite = new THREE.Sprite(material);
+
+  sprite.scale.set(0.5, 0.25, 1);
+
+  return sprite;
+}
+
 export function createPoint(scene, x, y, z, color = 0xff0000, radius = 0.05) {
   const geo = new THREE.SphereGeometry(radius, 16, 16);
   const mat = new THREE.MeshBasicMaterial({ color });
   const point = new THREE.Mesh(geo, mat);
+
   point.position.set(x, y, z);
+
+  // ✅ Label erzeugen
+  const label = getNextLabel();
+  const sprite = createTextSprite(label);
+
+  // ✅ leicht über dem Punkt platzieren
+  sprite.position.set(0, 0.15, 0);
+
+  point.add(sprite);
+
+  // optional speichern
+  point.userData.label = label;
+
   scene.add(point);
+
   return point;
 }
 
