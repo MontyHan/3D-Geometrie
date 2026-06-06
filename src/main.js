@@ -19,7 +19,8 @@ let scene, camera, renderer;
 let rig;
 let controllers;
 
-// ✅ Mapping Funktion (Mathe → Three.js)
+// ✅ Mapping (Mathe → Three.js)
+// x → vorne, y → rechts, z → oben
 function mathToThree(x, y, z) {
   return new THREE.Vector3(y, z, x);
 }
@@ -31,12 +32,12 @@ function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x202040);
 
-  // ✅ Rig (Spieler) → Start auf Höhe 1
+  // ✅ Rig (Spieler)
   rig = new THREE.Group();
   rig.position.set(0, 1, 3);
   scene.add(rig);
 
-  // ✅ Kamera INS Rig
+  // ✅ Kamera ins Rig
   camera = new THREE.PerspectiveCamera(
     70,
     window.innerWidth / window.innerHeight,
@@ -44,13 +45,12 @@ function init() {
     100
   );
   rig.add(camera);
-
   camera.lookAt(0, 0, 0);
 
+  // ✅ Renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.xr.enabled = true;
-
   document.body.appendChild(renderer.domElement);
 
   initXR(renderer);
@@ -72,12 +72,11 @@ function init() {
   floor.rotation.x = -Math.PI / 2;
   scene.add(floor);
 
-  // ✅ ACHSEN (dein System: x=vorne, y=rechts, z=oben)
-
+  // ✅ ACHSEN (Mathe-System)
   const axisLength = 5;
 
   function createAxis(direction, color) {
-    const material = new THREE.LineBasicMaterial({ color: color });
+    const material = new THREE.LineBasicMaterial({ color });
     const points = [
       new THREE.Vector3(0, 0, 0),
       direction.clone().multiplyScalar(axisLength)
@@ -86,48 +85,26 @@ function init() {
     return new THREE.Line(geometry, material);
   }
 
-  // 🔵 X-Achse (vorne)
-  const xAxis = createAxis(new THREE.Vector3(0, 0, 1), 0x0000ff);
-  scene.add(xAxis);
+  // 🔵 x → vorne
+  scene.add(createAxis(new THREE.Vector3(0, 0, 1), 0x0000ff));
 
-  // 🔴 Y-Achse (rechts)
-  const yAxis = createAxis(new THREE.Vector3(1, 0, 0), 0xff0000);
-  scene.add(yAxis);
+  // 🔴 y → rechts
+  scene.add(createAxis(new THREE.Vector3(1, 0, 0), 0xff0000));
 
-  // 🟢 Z-Achse (oben)
-  const zAxis = createAxis(new THREE.Vector3(0, 1, 0), 0x00ff00);
-  scene.add(zAxis);
+  // 🟢 z → oben
+  scene.add(createAxis(new THREE.Vector3(0, 1, 0), 0x00ff00));
 
   // ✅ Controller
   controllers = initControllers(renderer, rig);
 
-  // ✅ Vector UI
+  // ✅ UI Systeme
   initVectorUI(scene);
-
-  // ✅ Input UI
   initInputUI(scene, camera, rig, controllers.right, {
     onCreatePoint: (x, y, z) => {
       const pos = mathToThree(x, y, z);
 
+      // ✅ Punkt (nur einmal gemappt!)
       const p = createPoint(scene, pos.x, pos.y, pos.z, 0xff0000, 0.05);
 
-      setVectorFromComponents(x, y, z, {
-        line: null
-      });
-
-      addOrtsvektorForPoint(scene, p);
-    }
-  });
-}
-
-function animate() {
-  renderer.setAnimationLoop(() => {
-    updateControllers(controllers);
-    updateTeleport(controllers, rig);
-
-    handleControllerButtons(controllers.left);
-    handleControllerButtons(controllers.right);
-
-    renderer.render(scene, camera);
-  });
-}
+      // ✅ Ortsvektor korrekt
+      addOrtsvektorForPoint(p, x, y, z);
