@@ -6,12 +6,16 @@ const SCALE = 0.5;
 // ✅ globaler Zähler für Punktnamen
 let pointIndex = 0;
 
-// ✅ Achsen-Mapping (Mathebuch → Three.js)
+// ✅ Achsen-Mapping (Mathe → Three.js)
+// Mathe:
+// x = blau → Three.js Z
+// y = rot  → Three.js X
+// z = grün → Three.js Y
 function mapAxes(x, y, z) {
   return new THREE.Vector3(
-    z * SCALE, // neue X
-    x * SCALE, // neue Y
-    y * SCALE  // neue Z
+    y * SCALE, // → X (rot)
+    z * SCALE, // → Y (grün / oben)
+    x * SCALE  // → Z (blau)
   );
 }
 
@@ -61,17 +65,15 @@ export function createPoint(scene, x, y, z, color = 0xff0000, radius = 0.05) {
   const mat = new THREE.MeshBasicMaterial({ color });
   const point = new THREE.Mesh(geo, mat);
 
-  // ✅ Achsen + Skalierung anwenden
+  // ✅ korrektes Mapping
   const pos = mapAxes(x, y, z);
   point.position.copy(pos);
 
-  // ✅ Label erzeugen
+  // ✅ Label
   const label = getNextLabel();
   const sprite = createTextSprite(label);
 
-  // ✅ leicht über dem Punkt platzieren
   sprite.position.set(0, 0.15, 0);
-
   point.add(sprite);
 
   point.userData.label = label;
@@ -82,7 +84,7 @@ export function createPoint(scene, x, y, z, color = 0xff0000, radius = 0.05) {
 }
 
 export function createLine(scene, points, color = 0x00ffcc) {
-  // ✅ alle Punkte korrekt mappen
+  // ✅ Mapping auf alle Punkte anwenden
   const mappedPoints = points.map(p => mapAxes(p.x, p.y, p.z));
 
   const geo = new THREE.BufferGeometry().setFromPoints(mappedPoints);
