@@ -9,7 +9,6 @@ import { initVectorUI, setVectorFromComponents } from './core/vectorUI.js';
 import { createPoint } from './core/geometryFactory.js';
 import { addOrtsvektorForPoint } from './core/vectorUI.js';
 
-
 let scene, camera, renderer;
 let rig;
 
@@ -65,26 +64,22 @@ function init() {
   // ✅ Controller
   const controllers = initControllers(renderer, rig);
 
-  // ✅ UI an linken Controller hängen
-  initInputUI(scene, camera, rig, controllers.left, {
-   onCreatePoint: (x, y, z) => {
-  // ✅ Punkt speichern (WICHTIG)
-  const p = createPoint(scene, x, y, z, 0xff0000, 0.05);
+  // ✅🔥 UI an RECHTEN Controller hängen (FIX)
+  initInputUI(scene, camera, rig, controllers.right, {
+    onCreatePoint: (x, y, z) => {
+      const p = createPoint(scene, x, y, z, 0xff0000, 0.05);
 
-  // ✅ dein bestehender "aktueller" Vektor bleibt
-  setVectorFromComponents(x, y, z, {
-    lineColor: 0x00ffcc,
-    pointColor: 0x00ff00
+      setVectorFromComponents(x, y, z, {
+        lineColor: 0x00ffcc,
+        pointColor: 0x00ff00
+      });
+
+      addOrtsvektorForPoint(p, x, y, z);
+    }
   });
 
-  // ✅ NEU: zusätzlicher Ortsvektor (bleibt dauerhaft)
-  addOrtsvektorForPoint(p, x, y, z);
-}
-
-  });
-
-  // UI Interaktion
-  controllers.left.addEventListener('selectstart', () => {
+  // ✅🔥 UI Interaktion ebenfalls RECHTS (FIX)
+  controllers.right.addEventListener('selectstart', () => {
     handleUISelection();
   });
 
