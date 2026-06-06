@@ -4,7 +4,7 @@ import { initControllers, updateControllers } from './core/controllers.js';
 import { initTeleport, updateTeleport } from './core/teleport.js';
 import { initGrid } from './core/grid.js';
 
-import { initInputUI, handleUISelection } from './core/inputUI.js';
+import { initInputUI } from './core/inputUI.js';
 import { initVectorUI, setVectorFromComponents } from './core/vectorUI.js';
 import { createPoint } from './core/geometryFactory.js';
 import { addOrtsvektorForPoint } from './core/vectorUI.js';
@@ -21,6 +21,7 @@ function init() {
 
   // ✅ Rig (Spieler)
   rig = new THREE.Group();
+  rig.position.set(5, 5, 2); // ✅ STARTPOSITION
   scene.add(rig);
 
   // ✅ Kamera INS Rig
@@ -64,7 +65,7 @@ function init() {
   // ✅ Controller
   const controllers = initControllers(renderer, rig);
 
-  // ✅🔥 UI an RECHTEN Controller hängen (FIX)
+  // ✅ UI an rechten Controller
   initInputUI(scene, camera, rig, controllers.right, {
     onCreatePoint: (x, y, z) => {
       const p = createPoint(scene, x, y, z, 0xff0000, 0.05);
@@ -78,15 +79,10 @@ function init() {
     }
   });
 
-  // ✅🔥 UI Interaktion ebenfalls RECHTS (FIX)
-  controllers.right.addEventListener('selectstart', () => {
-    handleUISelection();
-  });
-
-  // ✅ Teleport nutzt Rig (wichtig!)
+  // ✅ Teleport nutzt Rig
   initTeleport(renderer, scene, rig);
 
-  // ✅ Vektor-Bildschirm / Vektor-UI
+  // ✅ Vektor UI
   initVectorUI(scene);
 }
 
