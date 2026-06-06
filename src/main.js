@@ -17,7 +17,7 @@ import { createPoint } from './core/geometryFactory.js';
 
 let scene, camera, renderer;
 let rig;
-let controllers; // ✅ wichtig für später
+let controllers;
 
 init();
 animate();
@@ -39,6 +39,9 @@ function init() {
     100
   );
   rig.add(camera);
+
+  // ✅ Startblick auf Ursprung
+  camera.lookAt(0, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -65,44 +68,42 @@ function init() {
   floor.rotation.x = -Math.PI / 2;
   scene.add(floor);
 
-  // ✅ Achsen
-  const axes = new THREE.AxesHelper(5);
-  scene.add(axes);
+  // ✅ ✅ ✅ EIGENE ACHSEN (DEIN SYSTEM)
+
+  const axisLength = 5;
+
+  function createAxis(direction, color) {
+    const material = new THREE.LineBasicMaterial({ color: color });
+    const points = [
+      new THREE.Vector3(0, 0, 0),
+      direction.clone().multiplyScalar(axisLength)
+    ];
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    return new THREE.Line(geometry, material);
+  }
+
+  // 🔵 X-Achse (BLAU) → entspricht Three.js Z
+  const xAxis = createAxis(new THREE.Vector3(0, 0, 1), 0x0000ff);
+  scene.add(xAxis);
+
+  // 🔴 Y-Achse (ROT) → entspricht Three.js X
+  const yAxis = createAxis(new THREE.Vector3(1, 0, 0), 0xff0000);
+  scene.add(yAxis);
+
+  // 🟢 Z-Achse (GRÜN, nach oben) → entspricht Three.js Y
+  const zAxis = createAxis(new THREE.Vector3(0, 1, 0), 0x00ff00);
+  scene.add(zAxis);
 
   // ✅ Controller
   controllers = initControllers(renderer, rig);
 
-  // ✅ Vector UI (vor Input initialisieren → sauberer)
+  // ✅ Vector UI
   initVectorUI(scene);
 
-  // ✅ UI an rechten Controller
+  // ✅ UI
   initInputUI(scene, camera, rig, controllers.right, {
     onCreatePoint: (x, y, z) => {
       const p = createPoint(scene, x, y, z, 0xff0000, 0.05);
 
       setVectorFromComponents(x, y, z, {
-        lineColor: 0x00ffcc,
-        pointColor: 0x00ff00
-      });
-
-      // ✅ nutzt automatisch A, B, C Labels
-      addOrtsvektorForPoint(p, x, y, z);
-    }
-  });
-
-  // ✅ Teleport nutzt Rig
-  initTeleport(renderer, scene, rig);
-}
-
-function animate() {
-  renderer.setAnimationLoop(() => {
-    updateControllers();
-    updateTeleport();
-
-    // ✅ 🔥 Controller-Buttons (A / X Toggle)
-    if (controllers?.left) handleControllerButtons(controllers.left);
-    if (controllers?.right) handleControllerButtons(controllers.right);
-
-    renderer.render(scene, camera);
-  });
-}
+        line
