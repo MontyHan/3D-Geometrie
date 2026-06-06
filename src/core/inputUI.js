@@ -11,7 +11,11 @@ const textSprites = {};
 
 let panelRoot = null;
 
-let onCreatePoint = null; // Callback für main/vectorUI
+let onCreatePoint = null;
+
+// ✅ Debounce gegen Doppel-Trigger
+let lastClickTime = 0;
+const CLICK_DELAY = 250; // ms
 
 export function initInputUI(s, cam, r, ctrl, options = {}) {
   scene = s;
@@ -23,7 +27,6 @@ export function initInputUI(s, cam, r, ctrl, options = {}) {
 
   createPanel();
 
-  // ✅🔥 WICHTIG: Event registrieren (hat dir komplett gefehlt)
   controller.addEventListener('selectstart', handleUISelection);
 }
 
@@ -115,7 +118,6 @@ function makeTextSprite(text) {
   ctx.fillStyle = 'rgba(255,255,255,1)';
   ctx.font = 'bold 56px Arial';
 
-  // ✅ sauber zentriert
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, canvas.width / 2, canvas.height / 2);
@@ -134,6 +136,12 @@ function makeTextSprite(text) {
 // ===== Interaktion =====
 
 export function handleUISelection() {
+  const now = performance.now();
+
+  // ✅ verhindert Doppel-Klicks
+  if (now - lastClickTime < CLICK_DELAY) return;
+  lastClickTime = now;
+
   if (!controller) return;
   if (!buttons.length) return;
 
